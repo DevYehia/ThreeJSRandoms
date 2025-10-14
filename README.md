@@ -1,4 +1,4 @@
-To run this repo, run the following commands:
+To run this repo, Install node.js and run the following commands:
 
 # Install three js
 npm install --save three
