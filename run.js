@@ -1,5 +1,31 @@
 import * as THREE from 'three';
 
+//map parameters
+const mapBotLeft = new THREE.Vector2(-30, -30)
+const mapTopRight =  new THREE.Vector2(30, 30)
+
+
+function rand(){
+    return Math.random();
+}
+
+function makeVec3FromVec2(vec2, depth){
+  return new THREE.Vector3(vec2.x, vec2.y, depth)
+}
+
+/**
+ * @param {THREE.Scene} scene
+ */
+function addLines(scene){
+
+  const geometry = new THREE.BoxGeometry( mapTopRight.x - mapBotLeft.x, mapTopRight.y - mapBotLeft.y, -0.1 );
+  const material = new THREE.MeshBasicMaterial( { color: ~scene.background.getHex()} );
+  const line = new THREE.Mesh( geometry, material );
+  ///scene.add( line );
+  return line
+}
+
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color().setHex(0x000000)
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -37,22 +63,11 @@ const pointBoundingBox = new THREE.Box3().setFromObject(ballPoint);
 
 scene.add(ballPoint)
 
-
-// const scorePillarGeo = new THREE.BoxGeometry(1,10)
-// const scorePillarMat = new THREE.MeshBasicMaterial({color:0xff00ff});
-// const scorepillar = new THREE.Mesh(scorePillarGeo, scorePillarMat)
-
-// scene.add(scorepillar)
-
-
 let camOffset = 7
 
 camera.position.z = camOffset;
 
 
-function rand(){
-    return Math.random();
-}
 
 
 let speedX = Math.random();
@@ -68,9 +83,19 @@ let trailList = [];
 const maxTrailSize = 50;
 
 let isSpacePressed = false;
+let scale = 1/100;
 
 window.addEventListener('keydown', e => {if(e.key == ' '){isSpacePressed = true}});
 window.addEventListener('keyup', e => {if(e.key == ' '){isSpacePressed = false}});
+window.addEventListener('wheel', e => {camOffset+=e.deltaY*scale; camera.position.z = camOffset;console.log(e.deltaY)})
+
+
+
+//add lines at borders
+let line = addLines(scene)
+scene.add(line)
+
+
 
 function animate() {
 
@@ -84,30 +109,27 @@ function animate() {
   //cube.rotation.y += 0.01;
   let cubeXPos = cube.position.x;
   let cubeYPos = cube.position.y;
-  let camBotLeft = new THREE.Vector2(1,1);
-  let camTopRight = new THREE.Vector2(1,1);;
-  camera.getViewBounds(camOffset, camBotLeft,camTopRight);
 
   //save prev speeds
   let prevSpeedX = speedX;
   let prevSpeedY = speedY;
 
-  if(cubeYPos + 0.5 > camTopRight.y){
+  if(cubeYPos + 0.5 > mapTopRight.y){
 
     speedY = -speedYVal;
   }
   //bottom collision
-  if(cubeYPos - 0.5 < camBotLeft.y){
+  if(cubeYPos - 0.5 < mapBotLeft.y){
 
     speedY = speedYVal;
   }
 
-  if(cubeXPos + 0.5 > camTopRight.x){
+  if(cubeXPos + 0.5 > mapTopRight.x){
 
     speedX = -speedXVal;
   }
 
-  if(cubeXPos - 0.5 < camBotLeft.x){
+  if(cubeXPos - 0.5 < mapBotLeft.x){
 
     speedX = speedXVal;
   }
@@ -158,6 +180,10 @@ function animate() {
   cube.position.x += speedX;
   cube.position.y += speedY;
 
+  //make cam follow cube
+  camera.translateX(speedX)
+  camera.translateY(speedY)
+
   //move bounding box to cube
   cubeBoundingBox.setFromObject(cube)
 
@@ -168,15 +194,18 @@ function animate() {
     //check for ball collision
   if (cubeBoundingBox.intersectsBox(pointBoundingBox)){
 
-    let randPointX = rand() * (camTopRight.x - camBotLeft.x) + camBotLeft.x
-    let randPointY = rand() * (camTopRight.y - camBotLeft.y) + camBotLeft.y
+    let randPointX = rand() * (mapTopRight.x - mapBotLeft.x) + mapBotLeft.x
+    let randPointY = rand() * (mapTopRight.y - mapBotLeft.y) + mapBotLeft.y
     ballPoint.position.copy(new THREE.Vector3(randPointX, randPointY, 0))
     pointBoundingBox.setFromObject(ballPoint)
     console.log("int")
 
     console.log((scene.background.getHex() + 0xff) % 0xffffff)
+
+    let randColor = rand() * 0xffffff;
     //change background color
-    scene.background.setHex( rand() * 0xffffff)
+    scene.background.setHex( randColor )
+    line.material.color.setHex(~randColor)
   }
   
 
